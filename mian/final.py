@@ -224,7 +224,7 @@ class Main:
                 for word in tokenized:
                     sim_words_array = []
                     try:
-                        get_similarity = self.model.most_similar_cosmul(word, topn=30)
+                        get_similarity = self.model.most_similar_cosmul(word, topn=10)
                         for similarity in get_similarity:
                             sim_words_array.append(similarity[0])
                     except:
@@ -244,7 +244,7 @@ class Main:
     def synonyms_to_db(self):
         my_coll = self.client.context_mongo(collection_name_csv_to_db)
         all_syn = self.client.context_mongo(all_syn_collection_names)
-        sentences = [i['cleaned_text'] for i in my_coll.find()]
+        sentences = [i['cleaned_text'] for i in my_coll.find()[:150]]
         for i, j in self.find_upload(sentences).items():
             if all_syn.find_one({'name': i}):
                 pass
@@ -274,9 +274,11 @@ class Main:
 
     def result(self,ref):
         syn_encoded = self.client.context_mongo('syn_encoded_tolied')
+
         vector_1 = np.mean([self.word_embedding_method(ref)], axis=0)
+
         res = {}
-        for i in tqdm(syn_encoded.find({}, {"_id": False})):
+        for i in tqdm(syn_encoded.find({}, {"_id": False})[:100]):
 
             result = util.cos_sim(vector_1.tolist(), [c for c in i['mean_encoded'] if type(c) != float])
             res[i['text']] = np.mean(sorted(result[0].detach().numpy(), reverse=True)[:5])
@@ -293,7 +295,15 @@ mn.synonyms_to_db()
 #%%
 mn.encod_to_db()
 #%%
-mn.result('ارسال پیامک ریمایندر پس از ویرایش جلسه')
+mn.result('افزودن دکمه نمایش بیشتر برای دوستان آنلاین در فید')
 #%%
 
+#%%
+bb=MongoClient(host,port)
+#%%
+bbb=bb[db_name]
+#%%
+cc=bbb[all_encoded_collection_names]
+#%%
+len(cc.find_one({},{'mean_encoded'})['mean_encoded'][0])
 #%%

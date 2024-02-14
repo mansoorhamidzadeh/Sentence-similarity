@@ -13,3 +13,5 @@ collection_name_csv_to_db='new_version_of_cleaned_dataset'
 all_syn_collection_names = 'all_syn_tolied'
 all_encoded_collection_names = 'syn_encoded_tolied'
 
+
+#%%
