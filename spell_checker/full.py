@@ -73,7 +73,6 @@ def load_data(base_path, corr_file, incorr_file):
 
 
 def batch_iter(data, batch_size, shuffle):
-
     n_batches = int(np.ceil(len(data) / batch_size))
     indices = list(range(len(data)))
     if shuffle:  np.random.shuffle(indices)
@@ -132,7 +131,6 @@ def untokenize_without_unks(batch_predictions, batch_lengths, vocab, batch_clean
 
 
 def untokenize_without_unks2(batch_predictions, batch_lengths, vocab, batch_clean_sentences, topk=None):
-
     print(batch_predictions.shape)
     idx2token = vocab["idx2token"]
     unktoken = vocab["token2idx"][vocab["unk_token"]]
@@ -224,7 +222,6 @@ _simple_bert_tokenize_sentences = \
 
 
 def bert_tokenize(batch_sentences):
-
     batch_sentences, batch_tokens, batch_splits = _custom_bert_tokenize_sentences(batch_sentences)
 
     # max_seq_len = max([len(tokens) for tokens in batch_tokens])
@@ -248,7 +245,6 @@ def bert_tokenize(batch_sentences):
 
 
 def bert_tokenize_for_valid_examples(batch_orginal_sentences, batch_noisy_sentences):
-
     _batch_orginal_sentences = _simple_bert_tokenize_sentences(batch_orginal_sentences)
     _batch_noisy_sentences, _batch_tokens, _batch_splits = _custom_bert_tokenize_sentences(batch_noisy_sentences)
     valid_idxs = [idx for idx, (a, b) in enumerate(zip(_batch_orginal_sentences, _batch_noisy_sentences)) if
@@ -549,7 +545,6 @@ def spell_checking_on_sents(model, vocab, device, normalizer, txt):
     return predicted
 
 
-
 class Spell_checker:
     def __init__(self):
         self.normalizer = Normalizer(punctuation_spacing=False, remove_extra_spaces=False)
@@ -558,6 +553,13 @@ class Spell_checker:
         self.model, self.vocab, self.device = load_pre_model(vocab_path=self.vocab_path,
                                                              model_checkpoint_path=self.model_checkpoint_path)
 
-    def execute(self, text):
+    def execute(self, text) -> list:
         output = spell_checking_on_sents(self.model, self.vocab, self.device, self.normalizer, text)
         return output
+
+
+# %%
+sp = Spell_checker()
+# %%
+sp.execute('رفع مشکل تغییر سمت کاربر شماره 8 (مدیرعامل)')
+# %%

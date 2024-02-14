@@ -30,7 +30,7 @@ class CleaningData:
                      fix_unicode=True,
                      to_ascii=False,
                      no_numbers=True,
-                     no_emoji=True,
+
                      no_digits=True,
                      no_punct=True,
                      no_emails=True,
@@ -62,3 +62,10 @@ class CleaningData:
     def save_to_csv(self):
         dataset = self.final_dataset()
         dataset.to_csv('task.csv', index=False, encoding='utf-8')
+
+#%%
+CleaningData( '../datasets/task_1402.11.15.csv',
+             'عنوان',
+              'job').save_to_csv(
+)
+#%%

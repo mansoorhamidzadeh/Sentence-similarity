@@ -46,7 +46,7 @@ class CleaningData:
                      fix_unicode=True,
                      to_ascii=False,
                      no_numbers=True,
-                     no_emoji=True,
+                     #no_emoji=True,
                      no_digits=True,
                      no_punct=True,
                      no_emails=True,
@@ -64,7 +64,7 @@ class CleaningData:
     def clead_dataset(self):
         dataset = self.drop_row_with_special_word()
         dataset['cleaned_text'] = dataset[self.csv_column_name_to].apply(self.clean_text)
-        dataset.drop(columns={'job'}, inplace=True)
+        dataset.drop(columns={self.csv_column_name_to}, inplace=True)
         return dataset
 
     def final_dataset(self):
@@ -77,10 +77,9 @@ class CleaningData:
 
         return dataset
 
-    def save_to_csv(self):
+    def save_to_csv(self,path,name_format):
         dataset = self.final_dataset()
-        dataset.to_csv('task.csv', index=False, encoding='utf-8')
-
+        dataset.to_csv(f'{path}{name_format}', index=False, encoding='utf-8')
 
 # %%
 
@@ -142,8 +141,9 @@ class ConnectDatabase:
         my_coll = self.context_mongo(collection_name_csv_to_db)
         sentences = [i['cleaned_text'] for i in my_coll.find()[:100]]
         return sentences
-
-
+#%%
+cn=ConnectDatabase(database_name=db_name)
+cn.set_data_mongo(collection_name_csv_to_db,dataset_path,csv_column_name,csv_column_name_to)
 # %%
 class Main:
 
@@ -224,7 +224,7 @@ class Main:
                 for word in tokenized:
                     sim_words_array = []
                     try:
-                        get_similarity = self.model.most_similar_cosmul(word, topn=10)
+                        get_similarity = self.model.most_similar_cosmul(word, topn=30)
                         for similarity in get_similarity:
                             sim_words_array.append(similarity[0])
                     except:
@@ -273,7 +273,7 @@ class Main:
                     })
 
     def result(self,ref):
-        syn_encoded = self.client.context_mongo('syn_encoded')
+        syn_encoded = self.client.context_mongo('syn_encoded_tolied')
         vector_1 = np.mean([self.word_embedding_method(ref)], axis=0)
         res = {}
         for i in tqdm(syn_encoded.find({}, {"_id": False})):
@@ -284,6 +284,14 @@ class Main:
         return list(sorted(res.items(), key=lambda item: item[1], reverse=True))[:15]
 #%%
 mn=Main(db_name,glove_path,stopword_path)
+
+
+#%%
+mn.synonyms_to_db()
+
+
+#%%
+mn.encod_to_db()
 #%%
 mn.result('ارسال پیامک ریمایندر پس از ویرایش جلسه')
 #%%
