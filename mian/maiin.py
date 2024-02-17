@@ -14,134 +14,10 @@ import hazm
 import pandas as pd
 import regex as re
 from cleantext import clean
-
+from mian.cleaningData import *
+from mian.connectDatabase import *
+from mian.loadStatic import *
 lemmatizer = Lemmatizer()
-#%%
-
-class CleaningData:
-    def __init__(self, dataset_file, column_name, csv_column_name_to):
-        self.dataset_file = dataset_file
-        self.column_name = column_name
-        self.csv_column_name_to = csv_column_name_to
-
-    def read_dataset(self):
-        dataset = pd.read_csv(self.dataset_file)
-        dataset = dataset[[self.column_name]]
-        dataset.rename(columns={self.column_name: self.csv_column_name_to}, inplace=True)
-        return dataset
-
-    def drop_row_with_special_word(self):
-        dataset = self.read_dataset()
-        dataset.drop(dataset[dataset[self.csv_column_name_to].str.contains('تولد')].index, inplace=True)
-        dataset.dropna(inplace=True)
-        dataset.drop_duplicates(inplace=True)
-        dataset.reset_index(drop=True, inplace=True)
-        return dataset
-
-    def clean_text(self, text):
-        text = clean(text,
-                     fix_unicode=True,
-                     to_ascii=False,
-                     no_numbers=True,
-                     #no_emoji=True,
-                     no_digits=True,
-                     no_punct=True,
-                     no_emails=True,
-                     replace_with_digit='',
-                     replace_with_email='',
-                     replace_with_phone_number='',
-                     replace_with_punct='')
-        text = re.sub(r'[\u200c]', '', text)
-        text = text.replace('<number>', ' ')
-        text = hazm.word_tokenize(text)
-        text = ' '.join(text)
-
-        return text
-
-    def clead_dataset(self):
-        dataset = self.drop_row_with_special_word()
-        dataset['cleaned_text'] = dataset[self.csv_column_name_to].apply(self.clean_text)
-        dataset.drop(columns={self.csv_column_name_to}, inplace=True)
-        return dataset
-
-    def final_dataset(self):
-        dataset = self.clead_dataset()
-        dataset['number_of_words'] = dataset.cleaned_text.apply(lambda x: len(x.split()))
-        dataset.drop(dataset[dataset['number_of_words'] < 3].index, inplace=True)
-        dataset.drop(columns={'number_of_words'}, inplace=True)
-        dataset.drop_duplicates(inplace=True)
-        dataset.reset_index(drop=True, inplace=True)
-
-        return dataset
-
-    def save_to_csv(self,path,name_format):
-        dataset = self.final_dataset()
-        dataset.to_csv(f'{path}{name_format}', index=False, encoding='utf-8')
-
-# %%
-
-class Loadstatic:
-    def __init__(self):
-        pass
-
-    def load_stop_words(self, _stopword_path):
-        with open(_stopword_path, encoding="utf8") as f:
-            stop = f.readlines()
-        stop_word = [word.replace('\n', '') for word in stop]
-        stop_word = [re.sub('[\\u200c]', ' ', word) for word in stop_word]
-        stop_word.extend(stop_words())
-        return stop_word
-
-    def load_glove_model(sekf,_glove_file):
-        print("loading glove model")
-        model = KeyedVectors.load_word2vec_format(_glove_file, binary=False)
-        print(f"loaded glove model , {len(model)}")
-        return model
-
-    def load_word2vec_model(self, _word2vec_cbow_path):
-        print('loading word2vec model')
-        word2vec_model = KeyedVectors.load_word2vec_format(_word2vec_cbow_path, binary=True)
-        print(f"loaded word2vec model,{len(word2vec_model)}")
-        return word2vec_model
-
-#%%
-Loadstatic().load_glove_model(glove_path)
-
-
-# %%
-class ConnectDatabase:
-    def __init__(self, database_name):
-        self.database_name = database_name
-
-
-    def context_mongo(self,collection_name):
-        client = MongoClient(host=host, port=port)
-        client_my = client[self.database_name]
-        my_collection =client_my[collection_name]
-        return my_collection
-
-    def read_dataset_csv(self, _dataset_path, _csv_column_name, _csv_column_name_to):
-        df = CleaningData(_dataset_path, _csv_column_name, _csv_column_name_to).final_dataset()
-        return df
-
-    def set_data_mongo(self, _collection_name_csv_to_db, _dataset_path, _csv_column_name, _csv_column_name_to):
-        my_pd_data = self.read_dataset_csv(_dataset_path, _csv_column_name, _csv_column_name_to)
-        my_pd_data = my_pd_data.to_dict(orient='records')
-        my_coll = self.context_mongo(collection_name_csv_to_db)
-        for i in tqdm(my_pd_data):
-            if my_coll.find_one({'cleaned_text': i['cleaned_text']}):
-                pass
-            else:
-                my_coll.insert_one(i)
-
-    def synonyms_to_db(self):
-        my_coll = self.context_mongo(collection_name_csv_to_db)
-        sentences = [i['cleaned_text'] for i in my_coll.find()[:100]]
-        return sentences
-#%%
-cn=ConnectDatabase(database_name=db_name)
-cn.set_data_mongo(collection_name_csv_to_db,dataset_path,csv_column_name,csv_column_name_to)
-# %%
 class Main:
 
 
@@ -151,7 +27,10 @@ class Main:
         self.model = Loadstatic().load_glove_model(embeding)
         self.stop_word = Loadstatic().load_stop_words(stopword)
         self.client=ConnectDatabase(database_name)
-
+    def clean_data_to_db(self):
+        self.client.set_data_mongo(collection_name_csv_to_db,
+                                   '../datasets/xx.csv',
+                                   csv_column_name,csv_column_name_to)
     def word_embedding_method(self, sentence):
         try:
             encoded_word_list = []
@@ -241,11 +120,14 @@ class Main:
     def synonyms_to_db(self):
         my_coll = self.client.context_mongo(collection_name_csv_to_db)
         all_syn = self.client.context_mongo(all_syn_collection_names)
-        sentences = [i['cleaned_text'] for i in my_coll.find()[:150]]
-        for i, j in self.find_upload(sentences).items():
+        sentences = [i['cleaned_text'] for i in my_coll.find()[:13]]
+        sen_list=[]
+        for i in sentences:
             if all_syn.find_one({'name': i}):
                 pass
-            else:
+            else:sen_list.append(i)
+
+        for i, j in self.find_upload(sen_list).items():
                 all_syn.insert_one({
                     "name": i,
                     "encoded": j
@@ -268,7 +150,10 @@ class Main:
                         'mean_encoded': syn_encoded_list
 
                     })
-
+    def finall_proccess(self):
+        self.clean_data_to_db()
+        self.synonyms_to_db()
+        self.encod_to_db()
     def result(self,ref):
         syn_encoded = self.client.context_mongo('syn_encoded_tolied')
 
