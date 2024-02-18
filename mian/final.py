@@ -105,7 +105,7 @@ class Loadstatic:
         return word2vec_model
 
 #%%
-Loadstatic().load_glove_model(glove_path)
+Loadstatic().load_word2vec_model(word2vec_cbow_path)
 
 
 # %%

@@ -43,14 +43,14 @@ class CleaningData:
 
         return text
 
-    def clead_dataset(self):
+    def cleaned_text(self):
         dataset = self.drop_row_with_special_word()
         dataset['cleaned_text'] = dataset[self.csv_column_name_to].apply(self.clean_text)
         dataset.drop(columns={self.csv_column_name_to}, inplace=True)
         return dataset
 
     def final_dataset(self):
-        dataset = self.clead_dataset()
+        dataset = self.cleaned_text()
         dataset['number_of_words'] = dataset.cleaned_text.apply(lambda x: len(x.split()))
         dataset.drop(dataset[dataset['number_of_words'] < 3].index, inplace=True)
         dataset.drop(columns={'number_of_words'}, inplace=True)

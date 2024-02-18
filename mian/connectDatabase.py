@@ -9,7 +9,7 @@ class ConnectDatabase:
 
 
     def context_mongo(self,collection_name):
-        client = MongoClient(host=host, port=port)
+        client = MongoClient(host=test_host, port=test_port)
         client_my = client[self.database_name]
         my_collection =client_my[collection_name]
         return my_collection
@@ -27,9 +27,4 @@ class ConnectDatabase:
                 pass
             else:
                 my_coll.insert_one(i)
-
-    def synonyms_to_db(self,_collection_name_csv_to_db):
-        my_coll = self.context_mongo(_collection_name_csv_to_db)
-        sentences = [i['cleaned_text'] for i in my_coll.find()[:100]]
-        return sentences
 

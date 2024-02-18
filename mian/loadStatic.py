@@ -25,3 +25,5 @@ class Loadstatic:
         word2vec_model = KeyedVectors.load_word2vec_format(_word2vec_cbow_path, binary=True)
         print(f"loaded word2vec model,{len(word2vec_model)}")
         return word2vec_model
+
+#%%
