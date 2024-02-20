@@ -2,6 +2,7 @@ import regex as re
 from farsi_tools import stop_words
 from gensim.models import KeyedVectors
 
+
 class Loadstatic:
     def __init__(self):
         pass
@@ -14,7 +15,7 @@ class Loadstatic:
         stop_word.extend(stop_words())
         return stop_word
 
-    def load_glove_model(sekf,_glove_file):
+    def load_glove_model(sekf, _glove_file):
         print("loading glove model")
         model = KeyedVectors.load_word2vec_format(_glove_file, binary=False)
         print(f"loaded glove model , {len(model)}")
@@ -26,4 +27,4 @@ class Loadstatic:
         print(f"loaded word2vec model,{len(word2vec_model)}")
         return word2vec_model
 
-#%%
+# %%

@@ -1,7 +1,8 @@
+import hazm
 import pandas as pd
 import regex as re
 from cleantext import clean
-import hazm
+
 
 class CleaningData:
     def __init__(self, dataset_file, column_name, csv_column_name_to):
@@ -28,7 +29,7 @@ class CleaningData:
                      fix_unicode=True,
                      to_ascii=False,
                      no_numbers=True,
-                     #no_emoji=True,
+                     # no_emoji=True,
                      no_digits=True,
                      no_punct=True,
                      no_emails=True,
@@ -59,10 +60,6 @@ class CleaningData:
 
         return dataset
 
-    def save_to_csv(self,path,name_format):
+    def save_to_csv(self, path, name_format):
         dataset = self.final_dataset()
         dataset.to_csv(f'{path}{name_format}', index=False, encoding='utf-8')
-
-
-
-

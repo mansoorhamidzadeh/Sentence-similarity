@@ -63,9 +63,10 @@ class CleaningData:
         dataset = self.final_dataset()
         dataset.to_csv('task.csv', index=False, encoding='utf-8')
 
-#%%
-CleaningData( '../datasets/task_1402.11.15.csv',
+
+# %%
+CleaningData('../datasets/task_1402.11.15.csv',
              'عنوان',
-              'job').save_to_csv(
+             'job').save_to_csv(
 )
-#%%
+# %%

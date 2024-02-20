@@ -1,4 +1,5 @@
 import warnings
+
 warnings.filterwarnings('ignore')
 
 from gensim.models import KeyedVectors
@@ -9,14 +10,15 @@ from pymongo import MongoClient
 from sentence_transformers import util
 from symspellpy import SymSpell, Verbosity
 from tqdm import tqdm
-from const.constance import *
 import hazm
 import pandas as pd
 import regex as re
 from cleantext import clean
 
 lemmatizer = Lemmatizer()
-#%%
+
+
+# %%
 
 class CleaningData:
     def __init__(self, dataset_file, column_name, csv_column_name_to):
@@ -43,7 +45,7 @@ class CleaningData:
                      fix_unicode=True,
                      to_ascii=False,
                      no_numbers=True,
-                     #no_emoji=True,
+                     # no_emoji=True,
                      no_digits=True,
                      no_punct=True,
                      no_emails=True,
@@ -74,9 +76,10 @@ class CleaningData:
 
         return dataset
 
-    def save_to_csv(self,path,name_format):
+    def save_to_csv(self, path, name_format):
         dataset = self.final_dataset()
         dataset.to_csv(f'{path}{name_format}', index=False, encoding='utf-8')
+
 
 # %%
 
@@ -92,7 +95,7 @@ class Loadstatic:
         stop_word.extend(stop_words())
         return stop_word
 
-    def load_glove_model(sekf,_glove_file):
+    def load_glove_model(sekf, _glove_file):
         print("loading glove model")
         model = KeyedVectors.load_word2vec_format(_glove_file, binary=False)
         print(f"loaded glove model , {len(model)}")
@@ -104,7 +107,8 @@ class Loadstatic:
         print(f"loaded word2vec model,{len(word2vec_model)}")
         return word2vec_model
 
-#%%
+
+# %%
 Loadstatic().load_word2vec_model(word2vec_cbow_path)
 
 
@@ -113,11 +117,10 @@ class ConnectDatabase:
     def __init__(self, database_name):
         self.database_name = database_name
 
-
-    def context_mongo(self,collection_name):
+    def context_mongo(self, collection_name):
         client = MongoClient(host=host, port=port)
         client_my = client[self.database_name]
-        my_collection =client_my[collection_name]
+        my_collection = client_my[collection_name]
         return my_collection
 
     def read_dataset_csv(self, _dataset_path, _csv_column_name, _csv_column_name_to):
@@ -138,19 +141,22 @@ class ConnectDatabase:
         my_coll = self.context_mongo(collection_name_csv_to_db)
         sentences = [i['cleaned_text'] for i in my_coll.find()[:100]]
         return sentences
-#%%
-cn=ConnectDatabase(database_name=db_name)
-cn.set_data_mongo(collection_name_csv_to_db,dataset_path,csv_column_name,csv_column_name_to)
+
+
+# %%
+cn = ConnectDatabase(database_name=db_name)
+cn.set_data_mongo(collection_name_csv_to_db, dataset_path, csv_column_name, csv_column_name_to)
+
+
 # %%
 class Main:
 
-
-    def __init__(self,database_name,embeding,stopword):
+    def __init__(self, database_name, embeding, stopword):
         self.sym_spell = SymSpell(max_dictionary_edit_distance=3, prefix_length=8)
         self.sym_spell.load_dictionary(dictionary_path, term_index=0, count_index=1)
         self.model = Loadstatic().load_glove_model(embeding)
         self.stop_word = Loadstatic().load_stop_words(stopword)
-        self.client=ConnectDatabase(database_name)
+        self.client = ConnectDatabase(database_name)
 
     def word_embedding_method(self, sentence):
         try:
@@ -253,7 +259,7 @@ class Main:
 
     def encod_to_db(self):
         my_coll = self.client.context_mongo(all_syn_collection_names)
-        syn_encoded =  self.client.context_mongo(all_encoded_collection_names)
+        syn_encoded = self.client.context_mongo(all_encoded_collection_names)
         for i in tqdm(my_coll.find({}, {"_id": False})):
             if syn_encoded.find_one({'text': i['name']}):
                 pass
@@ -269,16 +275,15 @@ class Main:
 
                     })
 
-    def result(self,ref):
+    def result(self, ref):
         syn_encoded = self.client.context_mongo('syn_encoded_tolied')
 
         vector_1 = np.mean([self.word_embedding_method(ref)], axis=0)
 
         res = {}
         for i in tqdm(syn_encoded.find({}, {"_id": False})[:100]):
-
             result = util.cos_sim(vector_1.tolist(), [c for c in i['mean_encoded'] if type(c) != float])
             res[i['text']] = np.mean(sorted(result[0].detach().numpy(), reverse=True)[:5])
             # res[i['text']] = result[0].detach().numpy()
         return list(sorted(res.items(), key=lambda item: item[1], reverse=True))[:15]
-#%%
+# %%

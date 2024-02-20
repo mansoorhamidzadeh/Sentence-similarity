@@ -17,7 +17,7 @@ spell_checker/bertokenizer
 
 # Generated files
 .idea/**/contentModel.xml
-
+**/__pycache__/
 # Sensitive or high-churn files
 .idea/**/dataSources/
 .idea/**/dataSources.ids

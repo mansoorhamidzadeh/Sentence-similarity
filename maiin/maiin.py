@@ -1,33 +1,25 @@
 import warnings
+
 warnings.filterwarnings('ignore')
 
-from gensim.models import KeyedVectors
 import numpy as np
-from farsi_tools import stop_words
 from hazm import word_tokenize, Lemmatizer
-from pymongo import MongoClient
 from sentence_transformers import util
 from symspellpy import SymSpell, Verbosity
-from tqdm import tqdm
-from const.constance import *
-import hazm
-import pandas as pd
-import regex as re
-from cleantext import clean
-from mian.cleaningData import *
-from mian.connectDatabase import *
-from mian.loadStatic import *
+from maiin.connectDatabase import *
+from maiin.loadStatic import *
+
 lemmatizer = Lemmatizer()
+
+
 class Main:
 
-
-    def __init__(self,database_name,embeding,stopword):
+    def __init__(self, database_name, embeding, stopword):
         self.sym_spell = SymSpell(max_dictionary_edit_distance=3, prefix_length=8)
         self.sym_spell.load_dictionary(test_dictionary_path, term_index=0, count_index=1)
         self.model = Loadstatic().load_word2vec_model(embeding)
         self.stop_word = Loadstatic().load_stop_words(stopword)
-        self.client=ConnectDatabase(database_name)
-
+        self.client = ConnectDatabase(database_name)
 
     def word_embedding_method(self, sentence):
         try:
@@ -115,25 +107,26 @@ class Main:
                 continue
         return all_predicted_sentences
 
-    def synonyms_to_db(self,collection_name_csv_to_db,all_syn_collection_names):
+    def synonyms_to_db(self, collection_name_csv_to_db, all_syn_collection_names):
         my_coll = self.client.context_mongo(collection_name_csv_to_db)
         all_syn = self.client.context_mongo(all_syn_collection_names)
         sentences = [i['cleaned_text'] for i in my_coll.find()]
-        sen_list=[]
+        sen_list = []
         for i in sentences:
             if all_syn.find_one({'name': i}):
                 pass
-            else:sen_list.append(i)
+            else:
+                sen_list.append(i)
 
         for i, j in self.find_upload(sen_list).items():
-                all_syn.insert_one({
-                    "name": i,
-                    "encoded": j
-                })
+            all_syn.insert_one({
+                "name": i,
+                "encoded": j
+            })
 
-    def encod_to_db(self,all_syn_collection_names,all_encoded_collection_names):
+    def encod_to_db(self, all_syn_collection_names, all_encoded_collection_names):
         my_coll = self.client.context_mongo(all_syn_collection_names)
-        syn_encoded =  self.client.context_mongo(all_encoded_collection_names)
+        syn_encoded = self.client.context_mongo(all_encoded_collection_names)
         for i in tqdm(my_coll.find({}, {"_id": False})):
             if syn_encoded.find_one({'text': i['name']}):
                 pass
@@ -147,8 +140,8 @@ class Main:
                         'generated_sent': i['encoded'],
                         'mean_encoded': syn_encoded_list
 
-
                     })
+
     def finall_proccess(self,
                         dataset_path,
                         collection_name_csv_to_db,
@@ -161,19 +154,18 @@ class Main:
                                    dataset_path,
                                    csv_column_name,
                                    csv_column_name_to)
-        self.synonyms_to_db(collection_name_csv_to_db,all_syn_collection_names)
-        self.encod_to_db(all_syn_collection_names,all_encoded_collection_names)
+        self.synonyms_to_db(collection_name_csv_to_db, all_syn_collection_names)
+        self.encod_to_db(all_syn_collection_names, all_encoded_collection_names)
         print('####### Done ######')
-    def result(self,ref):
+
+    def result(self, ref):
         syn_encoded = self.client.context_mongo(test_encoded)
 
         vector_1 = np.mean([self.word_embedding_method(ref)], axis=0)
 
         res = {}
         for i in tqdm(syn_encoded.find({}, {"_id": False})[:100]):
-
             result = util.cos_sim(vector_1.tolist(), [c for c in i['mean_encoded'] if type(c) != float])
             res[i['text']] = np.mean(sorted(result[0].detach().numpy(), reverse=True)[:5])
             # res[i['text']] = result[0].detach().numpy()
         return list(sorted(res.items(), key=lambda item: item[1], reverse=True))[:15]
-

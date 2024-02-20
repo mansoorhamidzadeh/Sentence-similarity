@@ -1,17 +1,18 @@
 from pymongo import MongoClient
-from const.constance import *
-from mian.cleaningData import *
 from tqdm import tqdm
+
+from const.constance import *
+from maiin.cleaningData import *
+
 
 class ConnectDatabase:
     def __init__(self, database_name):
         self.database_name = database_name
 
-
-    def context_mongo(self,collection_name):
+    def context_mongo(self, collection_name):
         client = MongoClient(host=test_host, port=test_port)
         client_my = client[self.database_name]
-        my_collection =client_my[collection_name]
+        my_collection = client_my[collection_name]
         return my_collection
 
     def read_dataset_csv(self, _dataset_path, _csv_column_name, _csv_column_name_to):
@@ -27,4 +28,3 @@ class ConnectDatabase:
                 pass
             else:
                 my_coll.insert_one(i)
-
